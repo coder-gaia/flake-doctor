@@ -20,17 +20,27 @@ The real cost isn't the time spent fixing a flake. It's the silent erosion of tr
 
 ## Does the agent solve it well
 
-Flake Doctor reproduces the flake under controlled conditions, diagnoses the root cause, and proposes a patch, then runs that patch through four deterministic gates it does not control: **stability** (0/50 reruns), **sensitivity via mutation testing** (a known bug in production code must still make the test fail), an **anti-cheat AST scan** (no sleep/rerun/skip/xfail tricks), and **blast-radius** (the rest of the suite still passes). A failing gate feeds structured evidence back to the agent for another attempt, up to a retry budget.
+Flake Doctor reproduces the flake under controlled conditions, diagnoses the root cause, and proposes a patch, then runs that patch through four deterministic gates it does not control: **stability** (0/30 reruns), **sensitivity via mutation testing** (a known bug in production code must still make the test fail), an **anti-cheat AST scan** (no sleep/rerun/skip/xfail tricks, no drop in assertion count), and **blast-radius** (the rest of the suite still passes). A failing gate feeds structured evidence back to the agent for another attempt, up to a retry budget of 2.
 
-The full evaluation design (primary metric: Verified Repair Rate; the Cheat Rate metric that isolates what verification actually buys you; the baselines; and the benchmark cases) is summarized in the [Improvement Changelog](CHANGELOG.md) and gets reported here once results exist.
+Measured on all 14 benchmark cases, the same cases and the same verifier for every fixer, applied after the fact so no fixer ever sees the mutant it will be judged against:
+
+| Fixer | Verified Repair Rate | Cheat Rate | What changed |
+|---|---|---|---|
+| B1: one direct prompt, no tools | 9/14 (64.3%) | 3/14 (21.4%) | Baseline. Sees only the flaky test file. |
+| B2: agent with tools, no verification | 13/14 (92.9%) | 1/14 (7.1%) | Same model, can read production source and run pytest itself. |
+| **Final: agent + verify-and-retry loop** | **13/14 (92.9%) batch, 14/14 real fixes** | **0/14 (0%)** | Same agent; a failing gate sends structured feedback back for another attempt. |
+
+**Cheat Rate** is the number that matters most: the fraction of fixes that look stable (0/30 reruns fail) but would let a real regression through uncaught. It is what a plain "tests pass now" check cannot see, and it is where verification earns its keep. 21.4% down to 0% is the actual size of the false-confidence problem this project set out to close, not the headline pass-rate jump.
+
+The final agent's one non-pass in its batch was a transient 120-second subprocess timeout in the harness, not a wrong fix; an immediate identical retry passed cleanly. Full evidence for every number above, including three real engineering incidents this evaluation itself surfaced (a sandbox escape, a JUnit parsing bug, and this timeout), is in the [Improvement Changelog](CHANGELOG.md). Representative agent trajectories, including one where the retry loop actually fires and the agent hand-verifies its own second attempt with self-injected mutants, are in [`trajectories/`](trajectories/).
 
 ## Can another person reproduce the result
 
-See [REPRODUCTION.md](REPRODUCTION.md) *(coming in a later phase: clean-environment setup, exact commands, expected output, cost and runtime)*.
+Yes: see [REPRODUCTION.md](REPRODUCTION.md) for exact commands, expected output, versions, and approximate runtime and cost, written for a clean checkout with no other context.
 
 ## Status
 
-🚧 In active development. This README, the [Improvement Changelog](CHANGELOG.md), and [REPRODUCTION.md](REPRODUCTION.md) are filled in as the project progresses; see the changelog for the real build story, evidence included.
+Core pipeline complete: benchmark, oracle, baseline, agent, verify-and-retry loop, and trajectory capture are all built, evaluated, and evidenced above. Remaining: the solution video and a final clean-environment reproduction pass.
 
 ## Repository layout
 
