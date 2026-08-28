@@ -1,0 +1,4 @@
+# Pinned for reproducibility (see REPRODUCTION.md for the exact tested versions).
+anthropic==1.2.0
+pytest==9.1.1
+pytest-randomly==4.1.0

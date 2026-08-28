@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets — never commit credentials (ground rule 08)
+.env
+.env.*
+*.key
+
+# Internal working notes (challenge brief, iteration plan, kickoff screenshots) —
+# personal scratch space, not part of the submission. docs/ is reserved for
+# actual project documentation that ships with the repo.
+dev-plan/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Raw evaluation artifacts that are large/regeneratable — keep the summarized
+# tables and representative trajectories tracked, not every raw run log.
+results/raw/
+*.log
