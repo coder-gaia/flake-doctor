@@ -35,10 +35,19 @@ See [REPRODUCTION.md](REPRODUCTION.md) *(coming in a later phase: clean-environm
 ## Repository layout
 
 ```
-flakedoctor/     agent, tools, verification gates, CLI
-baselines/       the plain-prompt baseline (B1)
-benchmark/cases/ synthetic flaky-test cases used for evaluation
-results/         evaluation output: every claim in this README traces to a file here
+flakedoctor/
+  detect.py      deterministic flake detection (fresh-subprocess reruns, no LLM)
+  verify.py      the four verification gates (no LLM)
+  agent.py       the tool-using fixer, with and without the verify-and-retry loop
+  eval.py        runs a fixer across every benchmark case and verifies each result
+  trajectory.py  renders a captured run into JSONL + a human-readable Markdown walkthrough
+baselines/
+  single_prompt.py  B1: one direct prompt, no tools, no execution
+benchmark/cases/ 14 synthetic flaky-test cases used for evaluation, each with a
+                 known mutant (see CHANGELOG.md for the full list and rationale)
+tests/           tests for this project's own harness (not the benchmark fixtures)
+results/         evaluation output and real fixer-written artifacts; every claim
+                 in this README and the changelog traces to a file here
 trajectories/    representative agent trajectories (required deliverable)
 ```
 
