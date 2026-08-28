@@ -1,0 +1,38 @@
+id: random_set_iteration_order
+category: randomness
+description: >
+  dedupe_tags returns list(set(tags)). The test asserts one exact ordering
+  of the result, but `set` iteration order for strings depends on the
+  process's hash seed -- stable within one pytest process, but different
+  across fresh Python process invocations.
+target_test: tests/test_dedupe.py::test_dedupe_preserves_a_specific_order
+culprit_test: null
+run:
+  reruns: 50
+  note: >
+    Must be measured as N separate fresh `python -m pytest` processes, not
+    N reruns inside one process -- PYTHONHASHSEED is fixed for the life of
+    a process, so this case cannot flake any other way.
+mutant:
+  files: [src/dedupe.py]
+  must_fail_test: tests/test_dedupe.py::test_dedupe_preserves_a_specific_order
+  what_it_breaks: >
+    Drops the last tag before deduplicating (off-by-one slice). The right
+    fix asserts set/sorted equality instead of exact list order -- that
+    fixed test must still fail against this mutant regardless of hash
+    seed.
+notes: >
+  This case exists specifically to validate that flakedoctor's detector
+  reruns pytest as fresh subprocesses (see flakedoctor/detect.py) rather
+  than looping in-process -- an in-process loop would report this case as
+  perfectly stable and miss the bug entirely.
+
+  Honest caveat: with only 3 short strings, hash-seed-driven set order is
+  close to a uniform random permutation, so this case fails MORE often
+  than it passes (~70%, measured) rather than sitting in the low/moderate
+  band the other cases target -- a "severe" flake rather than an
+  insidious one. Kept anyway because (a) it's the only case that exercises
+  the fresh-subprocess requirement, and (b) a fix that replaces exact-order
+  assertion with set/sorted equality still drives it to a clean 0/50, which
+  is all Verified Repair Rate actually requires.
+expected_flake_rate: 0.70 # empirical: 28/40 fresh-process runs (validated 2026-08-28) -- see caveat above

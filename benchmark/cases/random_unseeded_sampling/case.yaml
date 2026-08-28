@@ -1,0 +1,26 @@
+id: random_unseeded_sampling
+category: randomness
+description: >
+  pick_weighted_sample draws from the global `random` module with no
+  injectable RNG. The test hardcodes "gold" (weight 20 of 23) as the first
+  draw -- true most of the time, false on the roughly one run in eight
+  where the current seed favors a lighter item.
+target_test: tests/test_weighted_sample.py::test_heavily_weighted_item_is_picked_first
+culprit_test: null
+run:
+  reruns: 50
+mutant:
+  files: [src/weighted_sample.py]
+  must_fail_test: tests/test_weighted_sample.py::test_heavily_weighted_item_is_picked_first
+  what_it_breaks: >
+    Weights are accepted but silently ignored (uniform random.choice
+    instead of random.choices(weights=...)). The right fix injects an
+    explicit random.Random(seed) and asserts a statistical property over
+    many draws instead of one hardcoded draw -- that fixed test must still
+    fail against this mutant.
+notes: >
+  The flake comes from pytest-randomly reseeding the global `random` module
+  before every test, not from process-level nondeterminism -- so unlike
+  random_set_iteration_order, this one flakes even within a single pytest
+  process across repeated -p randomly runs.
+expected_flake_rate: 0.15 # empirical: 6/40 fresh-process runs (validated 2026-08-28)

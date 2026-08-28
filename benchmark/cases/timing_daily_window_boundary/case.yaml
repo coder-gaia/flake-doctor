@@ -1,0 +1,24 @@
+id: timing_daily_window_boundary
+category: timing
+description: >
+  DailyRateLimiter resets its counter when the calendar day changes. The
+  test drives four calls expecting exactly one rejection (quota of 3), but
+  a simulated day rollover partway through the sequence resets the counter
+  and grants a call that should have been refused.
+target_test: tests/test_daily_limiter.py::test_fourth_call_same_day_is_rejected
+culprit_test: null
+run:
+  reruns: 50
+mutant:
+  files: [src/daily_limiter.py]
+  must_fail_test: tests/test_daily_limiter.py::test_fourth_call_same_day_is_rejected
+  what_it_breaks: >
+    Off-by-one in the quota check (`>` instead of `>=`), so the limiter
+    grants one extra call per day. A properly fixed test (deterministic
+    date injection, same-day-only case) must still fail against this.
+notes: >
+  The simulated day sequence is seeded from pytest-randomly's per-test
+  random state, not a real overnight wait -- keeps the flake rate
+  reproducible across machines while exercising the real day-boundary
+  reset logic.
+expected_flake_rate: 0.075 # empirical: 3/40 fresh-process runs (validated 2026-08-28)

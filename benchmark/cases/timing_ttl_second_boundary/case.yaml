@@ -1,0 +1,25 @@
+id: timing_ttl_second_boundary
+category: timing
+description: >
+  TTLCache buckets entries by the truncated wall-clock second. The test
+  writes and reads back-to-back and assumes both calls land in the same
+  one-second bucket -- true most of the time, false when the simulated
+  clock crosses a boundary between the two calls.
+target_test: tests/test_ttl_cache.py::test_set_then_get_within_ttl
+culprit_test: null
+run:
+  reruns: 50
+mutant:
+  files: [src/ttl_cache.py]
+  must_fail_test: tests/test_ttl_cache.py::test_set_then_get_within_ttl
+  what_it_breaks: >
+    Removes the expiry check from TTLCache.get, so stale entries are never
+    evicted. A "fix" that only patches the same-bucket happy path can't be
+    told apart from correct code by this alone; a properly fixed test
+    (deterministic clock, explicit same-bucket AND cross-bucket cases)
+    catches it immediately.
+notes: >
+  The fake clock is seeded from pytest-randomly's per-test random state, not
+  real time.sleep -- this keeps the flake rate reproducible across machines
+  while still exercising TTLCache's real boundary-truncation logic.
+expected_flake_rate: 0.10 # empirical: 4/40 fresh-process runs (validated 2026-08-28)
