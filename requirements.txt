@@ -1,5 +1,11 @@
 # Pinned for reproducibility (see REPRODUCTION.md for the exact tested versions).
-anthropic==1.2.0
+#
+# claude-agent-sdk drives the baseline and the agent. It authenticates the
+# same way the Claude Code CLI does (checks ANTHROPIC_API_KEY first, falls
+# back to a logged-in Claude subscription session) -- no separate API key
+# is required if you already run Claude Code under a Pro/Max plan. See
+# CHANGELOG.md for why this replaced a raw-Anthropic-SDK design.
+claude-agent-sdk==0.2.147
 pytest==9.1.1
 pytest-randomly==4.1.0
 pyyaml==6.0.3
