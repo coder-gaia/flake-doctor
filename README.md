@@ -34,6 +34,8 @@ Measured on all 14 benchmark cases, the same cases and the same verifier for eve
 
 The final agent's one non-pass in its batch was a transient 120-second subprocess timeout in the harness, not a wrong fix; an immediate identical retry passed cleanly. Full evidence for every number above, including three real engineering incidents this evaluation itself surfaced (a sandbox escape, a JUnit parsing bug, and this timeout), is in the [Improvement Changelog](CHANGELOG.md). Representative agent trajectories, including one where the retry loop actually fires and the agent hand-verifies its own second attempt with self-injected mutants, are in [`trajectories/`](trajectories/).
 
+**Tested beyond the 14 designed cases, too.** [`case-studies/typeguard_forward_ref_warning/`](case-studies/typeguard_forward_ref_warning/) is a real, documented bug from [agronholm/typeguard#221](https://github.com/agronholm/typeguard/issues/221), a root cause outside the 7 categories the benchmark was built around. The agent fixed it on the first attempt and, in its own diagnosis, explicitly corrected an outdated theory still sitting in the test file's own docstring. Trajectory in [`trajectories/real_world_typeguard_forward_ref_warning.md`](trajectories/real_world_typeguard_forward_ref_warning.md).
+
 ## Can another person reproduce the result
 
 Yes: see [REPRODUCTION.md](REPRODUCTION.md) for exact commands, expected output, versions, and approximate runtime and cost, written for a clean checkout with no other context.
@@ -55,6 +57,8 @@ baselines/
   single_prompt.py  B1: one direct prompt, no tools, no execution
 benchmark/cases/ 14 synthetic flaky-test cases used for evaluation, each with a
                  known mutant (see CHANGELOG.md for the full list and rationale)
+case-studies/    real, externally-sourced bugs used to test generalization
+                 beyond the designed benchmark (kept separate from it on purpose)
 tests/           tests for this project's own harness (not the benchmark fixtures)
 results/         evaluation output and real fixer-written artifacts; every claim
                  in this README and the changelog traces to a file here

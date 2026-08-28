@@ -1,0 +1,62 @@
+id: typeguard_forward_ref_warning
+category: real_world_validation
+description: >
+  Not one of the 14 designed benchmark cases. Sourced from a real,
+  documented open-source bug: https://github.com/agronholm/typeguard/issues/221.
+  typeguard's ForwardRefPolicy.GUESS feature warns when it substitutes a
+  guessed type for an unresolved forward-reference annotation, and
+  mutates the function's __annotations__ in place once it does.
+source: https://github.com/agronholm/typeguard/issues/221
+target_test: tests/test_forward_ref_guessing.py::test_b_same_warning_again
+culprit_test: tests/test_forward_ref_guessing.py::test_a_triggers_the_warning_first
+run:
+  reruns: 30
+investigation_notes: >
+  The real issue's stated root cause is Python's `warnings` module only
+  emitting each unique (message, category, module, lineno) combination
+  once per process by default. Building a *minimal* extraction of that
+  exact mechanism (each test defining its own fresh, never-touched
+  function, matching the real test's nested-function pattern) was tried
+  first and does NOT reproduce on this project's pinned pytest 9.1.1:
+  all 10/10 fresh-process runs passed regardless of order. pytest's own
+  `pytest.warns()` apparently now resets the warning filter/registry per
+  use (the original issue thread references pytest#9288 about exactly
+  this), so the historical bug as literally described looks to already
+  be fixed upstream, five years on. That is itself worth recording, not
+  discarding quietly.
+
+  What IS committed here instead: sharing one module-level function
+  object between both tests (rather than a fresh one per test).
+  check_annotation() mutates that function's __annotations__ in place
+  once it resolves the forward reference, so reusing the object lets
+  that mutation leak from whichever test runs first into whichever runs
+  second -- a related, also-real bug (shared mutable state via a
+  function's own __dict__/annotations), sourced from the same real
+  function under test, just not the exact mechanism the 2021 issue
+  named. Validated empirically: 12/20 (60%) fresh-process runs fail,
+  symmetric by test order, same "DID NOT WARN" error text the real issue
+  reports.
+mutant:
+  files: [src/typechecker.py]
+  must_fail_test: tests/test_forward_ref_guessing.py::test_b_same_warning_again
+  what_it_breaks: >
+    Substitutes the wrong guessed type (always str) instead of the real
+    argument's type. A properly fixed test must still catch this.
+notes: >
+  Used to test generalization: does the agent correctly diagnose and fix
+  a bug in unfamiliar, externally-sourced code, not one of the 7
+  categories the 14-case benchmark was built around. Result (see
+  CHANGELOG.md and trajectories/real_world_typeguard_forward_ref_warning.md):
+  passed on the first attempt. The agent's own diagnosis matched the
+  mutation-leak mechanism above exactly, unprompted, including adding an
+  assertion that empirically demonstrates it before fixing anything.
+
+  It went further than expected: at the time of this run, the test
+  file's own docstring still claimed the flakiness was Python's warnings
+  registry (the original, now-outdated theory this case.yaml was written
+  to test). The agent explicitly rejected that claim in its own words --
+  "that theory is a red herring, pytest.warns() installs
+  simplefilter('always')" -- independently reaching the same conclusion
+  this case.yaml's investigation_notes reached by hand, live, from
+  reading the code rather than trusting the comment above it.
+expected_flake_rate: 0.60 # empirical: 12/20 fresh-process runs (validated 2026-08-28), matches the real issue's exact "DID NOT WARN" error text
