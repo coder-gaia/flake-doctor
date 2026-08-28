@@ -1,0 +1,35 @@
+id: order_dependence_cross_file
+category: order_dependence
+description: >
+  The benchmark's hard case. test_auth.py::test_login_marks_user_as_vip
+  logs "user-42" in as VIP and never resets the shared _SESSIONS dict in
+  src/auth.py. test_billing.py::test_new_user_pays_full_price assumes
+  "user-42" is a fresh user with no discount. Whichever test pytest-randomly
+  happens to run first decides whether test_billing.py passes -- the file
+  that fails is not the file with the bug.
+target_test: tests/test_billing.py::test_new_user_pays_full_price
+culprit_test: tests/test_auth.py::test_login_marks_user_as_vip
+run:
+  reruns: 50
+  note: >
+    Must be run over the whole `tests/` directory (both files collected
+    together) so pytest-randomly can shuffle their relative order -- a
+    single-file invocation of test_billing.py alone will never fail.
+mutant:
+  files: [src/billing.py]
+  must_fail_test: tests/test_billing.py::test_new_user_pays_full_price
+  what_it_breaks: >
+    Replaces the percentage VIP discount with a flat subtraction -- a real
+    pricing bug, unrelated to the flakiness bug. An agent that "fixes" the
+    flake by isolating session state (the right move) without touching
+    billing.py must have a fixed test that still catches this.
+notes: >
+  This is the benchmark's key test of root-cause diagnosis: an agent that
+  only reads test_billing.py (the file pytest reports as failing) has no
+  way to find the bug. It has to run the suite with shuffled order, notice
+  the failure correlates with test_auth.py running first, and read that
+  file too. A prediction worth recording in the changelog: a naive
+  single-prompt baseline that receives only "this test is flaky, fix it"
+  plus the failing file will very likely patch test_billing.py itself
+  (e.g. hardcode a discounted price) instead of finding the real culprit.
+expected_flake_rate: 0.55 # empirical: 22/40 fresh-process runs (validated 2026-08-28) -- close to the ~50% a 2-file coin flip predicts

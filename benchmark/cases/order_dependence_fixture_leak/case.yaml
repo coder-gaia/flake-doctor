@@ -1,0 +1,26 @@
+id: order_dependence_fixture_leak
+category: order_dependence
+description: >
+  A module-scoped fixture hands the same mutable list to every test in the
+  file. test_add_item_appends_new_name mutates it; whether
+  test_catalog_starts_empty_for_a_fresh_scenario sees an empty or
+  already-populated catalog depends entirely on which test pytest-randomly
+  runs first.
+target_test: tests/test_inventory.py::test_catalog_starts_empty_for_a_fresh_scenario
+culprit_test: tests/test_inventory.py::test_add_item_appends_new_name
+run:
+  reruns: 50
+mutant:
+  files: [src/inventory.py]
+  must_fail_test: tests/test_inventory.py::test_catalog_starts_empty_for_a_fresh_scenario
+  what_it_breaks: >
+    Removes the duplicate check from add_item, so calling it twice with the
+    same name adds it twice. A properly fixed test (function-scoped
+    fixture, calls add_item twice in one test, asserts no duplicate) must
+    still catch this.
+notes: >
+  Unlike order_dependence_cross_file, the culprit and the symptom are one
+  `pytest.fixture` decorator apart in the same file -- a much easier
+  diagnosis. Useful as a control case: an agent that can't solve this one
+  is unlikely to solve the cross-file case either.
+expected_flake_rate: 0.575 # empirical: 23/40 fresh-process runs (validated 2026-08-28)

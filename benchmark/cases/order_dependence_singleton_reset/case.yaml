@@ -1,0 +1,38 @@
+id: order_dependence_singleton_reset
+category: order_dependence
+description: >
+  get_config() memoizes into a module-level global the first time it runs.
+  Whichever of the two tests below runs first permanently decides what
+  every later call in the process sees, so exactly one of them fails --
+  which one flips depending on order.
+target_test: tests/test_config.py::test_config_honors_beta_mode_override
+culprit_test: tests/test_config.py::test_config_defaults_to_production
+run:
+  reruns: 50
+  note: >
+    Symmetric leak: test_config_defaults_to_production is equally capable
+    of being the "victim" if it runs second. target_test is picked as the
+    representative flaky node for scoring; either could be named.
+mutant:
+  files: [src/config.py]
+  must_fail_test: tests/test_config.py::test_config_honors_beta_mode_override
+  what_it_breaks: >
+    Changes the fallback default from "production" to "staging" -- a real
+    config bug unrelated to the caching issue. The right fix (e.g. a
+    force_reload flag, or a fixture that resets `_config` to None between
+    tests) must produce a test that still catches this.
+notes: >
+  Same root-cause family as order_dependence_fixture_leak (module-level
+  mutable state, not a fixture this time) but the leak is a bare `global`
+  instead of a shared object reference -- worth checking whether the agent
+  generalizes its diagnosis or only pattern-matches the fixture case.
+
+  Detector gotcha this case exists to catch: because the leak is symmetric
+  (exactly one of the two tests fails, whichever ran second), pytest's
+  whole-run exit code is always nonzero and cannot tell "flaky" apart from
+  "reliably broken." flakedoctor/detect.py must check the target test's
+  own per-node outcome (pytest -v / junit report), not the process exit
+  code -- order_dependence_fixture_leak happens to not need this (its two
+  orders are pass-all vs. fail-one), so this case is what forces the
+  detector to do it right.
+expected_flake_rate: 0.475 # empirical: 19/40 fresh-process runs, measured on the target test's own node result (validated 2026-08-28)
