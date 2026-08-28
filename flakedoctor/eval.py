@@ -96,21 +96,29 @@ def run_fixer_eval(
     for case_dir, target_test in load_cases():
         start = time.monotonic()
         before = _git_modified_tracked_files()
-        try:
-            with tempfile.TemporaryDirectory() as tmp:
-                candidate = fixer_fn(case_dir, Path(tmp) / "candidate", target_test)
+        with tempfile.TemporaryDirectory() as tmp:
+            candidate = Path(tmp) / "candidate"
+            try:
+                candidate = fixer_fn(case_dir, candidate, target_test)
                 report = verify_fix(case_dir, candidate, target_test, reruns=reruns)
-                if persist_label:
+                gates: dict[str, bool] = {g.name: g.passed for g in report.gates}
+                detail: dict[str, str] = {g.name: g.detail for g in report.gates}
+                verdict = "PASS" if report.all_passed else "FAIL"
+                result = CaseResult(case=case_dir.name, verdict=verdict, gates=gates, detail=detail)
+            except Exception as e:  # a fixer crashing on one case must not kill the whole eval
+                result = CaseResult(case=case_dir.name, verdict="ERROR", error=str(e))
+            finally:
+                # Persist whatever exists even on error/timeout -- an ERROR
+                # with no artifact to inspect afterward is a dead end. See
+                # CHANGELOG.md, shared_state_class_level_attribute's
+                # unreproduced subprocess timeout: the first time this
+                # happened, the candidate had already been cleaned up by
+                # the time anyone could look at what the agent had written.
+                if persist_label and candidate.exists():
                     snapshot_dir = RESULTS_DIR / "candidates" / persist_label / case_dir.name
                     if snapshot_dir.exists():
                         shutil.rmtree(snapshot_dir)
                     shutil.copytree(candidate, snapshot_dir)
-            gates: dict[str, bool] = {g.name: g.passed for g in report.gates}
-            detail: dict[str, str] = {g.name: g.detail for g in report.gates}
-            verdict = "PASS" if report.all_passed else "FAIL"
-            result = CaseResult(case=case_dir.name, verdict=verdict, gates=gates, detail=detail)
-        except Exception as e:  # a fixer crashing on one case must not kill the whole eval
-            result = CaseResult(case=case_dir.name, verdict="ERROR", error=str(e))
 
         violations = _git_modified_tracked_files() - before
         if violations:
