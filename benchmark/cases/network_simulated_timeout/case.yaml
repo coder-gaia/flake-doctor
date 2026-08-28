@@ -1,0 +1,30 @@
+id: network_simulated_timeout
+category: network
+description: >
+  FakeClient simulates a 15% transient timeout rate via random.random().
+  The test hardcodes "exactly 1 call" as if fetch_with_retry always
+  succeeds on the first attempt -- true most of the time, false whenever
+  the simulated client happens to fail once or more before succeeding.
+target_test: tests/test_fetch.py::test_fetch_succeeds_within_three_retries
+culprit_test: null
+run:
+  reruns: 50
+mutant:
+  files: [src/fetch.py]
+  must_fail_test: tests/test_fetch.py::test_fetch_succeeds_within_three_retries
+  what_it_breaks: >
+    Off-by-one in the retry loop (`retries - 1` instead of `retries`),
+    silently shrinking the retry budget. The right fix injects a seeded
+    random.Random into FakeClient and adds a dedicated test with an
+    always-failing client asserting exactly `retries` attempts are made
+    before raising -- that fixed test must still catch this mutant,
+    regardless of what the flaky hardcoded-count test above becomes.
+notes: >
+  No real network I/O anywhere in this case -- FakeClient never touches a
+  socket, keeping the benchmark sandboxed and reproducible per the
+  challenge's ground rules. Distinct failure shape from
+  random_unseeded_sampling: here the randomness lives in a dependency
+  (the client) that the function under test calls, not in the function
+  itself -- the fix is injecting a seed into the dependency, not into
+  fetch_with_retry.
+expected_flake_rate: 0.125 # empirical: 5/40 fresh-process runs (validated 2026-08-28)

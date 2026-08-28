@@ -1,0 +1,29 @@
+id: environment_decimal_context_leak
+category: environment
+description: >
+  test_rounds_to_two_places_for_display sets decimal.getcontext().prec = 2
+  globally instead of scoping it with decimal.localcontext(), and never
+  restores it. test_full_precision_division assumes the default
+  precision (28) -- true unless the rounding test happened to run first.
+target_test: tests/test_pricing.py::test_full_precision_division
+culprit_test: tests/test_pricing.py::test_rounds_to_two_places_for_display
+run:
+  reruns: 50
+  note: >
+    Not symmetric -- only the rounds-then-full-precision order fails.
+    Plain process exit code is a valid signal here.
+mutant:
+  files: [src/pricing.py]
+  must_fail_test: tests/test_pricing.py::test_full_precision_division
+  what_it_breaks: >
+    Swaps the division operands -- a real logic bug, independent of the
+    context leak. The right fix wraps the precision change in
+    `with decimal.localcontext():`; a properly fixed test must still
+    catch this.
+notes: >
+  Deliberately avoids any dependency on OS locale or timezone data (which
+  varies by machine and may not even be installed) -- the leak is pure
+  stdlib global state (decimal's thread-local context), fully portable.
+  Pairs with environment_leaked_env_var as the benchmark's two "global
+  interpreter state, not object state" flake sources.
+expected_flake_rate: 0.50 # empirical: 20/40 fresh-process runs (validated 2026-08-28)

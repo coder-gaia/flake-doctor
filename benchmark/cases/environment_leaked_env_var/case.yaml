@@ -1,0 +1,31 @@
+id: environment_leaked_env_var
+category: environment
+description: >
+  test_enables_beta_discount mutates os.environ directly instead of using
+  monkeypatch.setenv, so "DISCOUNT_MODE=beta" survives past the end of
+  that test. test_default_mode_charges_full_price assumes a clean
+  environment -- true unless the beta test happened to run first.
+target_test: tests/test_discounts.py::test_default_mode_charges_full_price
+culprit_test: tests/test_discounts.py::test_enables_beta_discount
+run:
+  reruns: 50
+  note: >
+    Not symmetric -- only the beta-then-default order fails, like
+    shared_state_class_level_attribute. Plain process exit code is a
+    valid signal here.
+mutant:
+  files: [src/discounts.py]
+  must_fail_test: tests/test_discounts.py::test_default_mode_charges_full_price
+  what_it_breaks: >
+    Wrong beta discount rate (0.80 instead of 0.85) -- a real pricing bug,
+    independent of the leak. The right fix uses monkeypatch.setenv (which
+    pytest restores automatically after the test); a properly fixed test
+    must still catch this rate error.
+notes: >
+  Distinct root cause from the order_dependence and shared_state
+  categories: the leaked state lives in process-global os.environ, not in
+  a Python object or module global. The fix is also different in kind --
+  pytest's own monkeypatch fixture, not a code refactor -- which is worth
+  the agent noticing rather than reflexively reaching for a fixture reset
+  pattern that would technically also work but misses the idiomatic tool.
+expected_flake_rate: 0.45 # empirical: 18/40 fresh-process runs (validated 2026-08-28)
