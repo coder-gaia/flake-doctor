@@ -122,9 +122,13 @@ class AgentRun:
 @dataclass
 class VerifiedFixResult:
     candidate_dir: Path
-    verification: VerificationReport
+    verification: VerificationReport  # the *final* attempt's report
     attempts: int
     runs: list[AgentRun] = field(default_factory=list)
+    # The exact feedback text sent before each retry -- "the feedback that
+    # shaped its next step," which deliverable 4 explicitly asks the
+    # trajectory to show. len() == attempts - 1.
+    feedback_history: list[str] = field(default_factory=list)
 
     @property
     def total_cost_usd(self) -> float:
@@ -182,6 +186,7 @@ async def _run_with_verification(
     prompt = INITIAL_PROMPT_TEMPLATE.format(target_test=target_test)
     options = _build_options(candidate_dir, max_turns)
     runs: list[AgentRun] = []
+    feedback_history: list[str] = []
 
     async with ClaudeSDKClient(options=options) as client:
         await client.query(prompt)
@@ -193,9 +198,13 @@ async def _run_with_verification(
         for attempt in range(max_retries + 1):
             report = verify_fix(original_case_dir, candidate_dir, target_test, reruns=verify_reruns)
             if report.all_passed or attempt == max_retries:
-                return VerifiedFixResult(candidate_dir, report, attempts=attempt + 1, runs=runs)
+                return VerifiedFixResult(
+                    candidate_dir, report, attempts=attempt + 1, runs=runs, feedback_history=feedback_history,
+                )
 
-            await client.query(FEEDBACK_TEMPLATE.format(feedback=report.as_feedback()))
+            feedback_text = FEEDBACK_TEMPLATE.format(feedback=report.as_feedback())
+            feedback_history.append(feedback_text)
+            await client.query(feedback_text)
             run = AgentRun(candidate_dir=candidate_dir)
             async for message in client.receive_response():
                 _record_response(run, message)

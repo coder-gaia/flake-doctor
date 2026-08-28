@@ -102,6 +102,28 @@ def test_retry_feedback_appears_between_attempts(tmp_path):
     assert "## Attempt 2" in markdown
 
 
+def test_final_verdict_shown_even_with_no_retry(tmp_path):
+    """A single-attempt pass has no feedback_between_attempts, but the
+    verification result that closed the loop must still appear -- a
+    trajectory with only tool calls and no verdict would hide the one
+    thing this project's approach is actually about.
+    """
+    attempt = [_assistant_text("Fixed it."), _result(num_turns=1, cost_usd=0.01)]
+
+    _, md_path = save(
+        case_id="fake_no_retry_case",
+        instructions="...",
+        initial_prompt="...",
+        attempts=[attempt],
+        out_dir=tmp_path,
+        final_verdict="[PASS] stability: 0/30 fresh-process runs failed\nVERDICT: PASS",
+    )
+
+    markdown = md_path.read_text(encoding="utf-8")
+    assert "## Verification (closed the loop)" in markdown
+    assert "VERDICT: PASS" in markdown
+
+
 def test_long_tool_result_is_truncated(tmp_path):
     huge_output = "x" * 5000
     attempt = [_tool_result("t1", huge_output)]

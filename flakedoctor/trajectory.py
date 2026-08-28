@@ -72,11 +72,17 @@ def render_markdown(
     initial_prompt: str,
     attempts: list[list[Any]],
     feedback_between_attempts: list[str] | None = None,
+    final_verdict: str | None = None,
 ) -> str:
     """attempts: one list of raw SDK messages per attempt (len 1 for B2,
     1 + retries for the verified agent). feedback_between_attempts, if
     given, has len(attempts) - 1 entries: the verification feedback sent
     before each retry, i.e. "the feedback that shaped its next step."
+    final_verdict, if given, is the four-gate report's own text (e.g.
+    VerificationReport.as_feedback()) for whichever attempt closed the
+    loop -- shown even when nothing needed a retry, since a trajectory
+    that only shows tool calls with no verdict at the end would hide the
+    one thing this project's whole approach is actually about.
     """
     lines = [
         f"# Trajectory: {case_id}",
@@ -110,6 +116,13 @@ def render_markdown(
             lines.append(feedback_between_attempts[i].strip())
             lines.append("```")
             lines.append("")
+    if final_verdict:
+        lines.append("## Verification (closed the loop)")
+        lines.append("")
+        lines.append("```")
+        lines.append(final_verdict.strip())
+        lines.append("```")
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -120,6 +133,7 @@ def save(
     attempts: list[list[Any]],
     out_dir: Path,
     feedback_between_attempts: list[str] | None = None,
+    final_verdict: str | None = None,
 ) -> tuple[Path, Path]:
     """Writes both required artifacts and returns their paths: a .jsonl
     (every attempt's raw messages, each tagged with its attempt index --
@@ -136,9 +150,11 @@ def save(
                 record = _to_jsonable(message)
                 record["attempt"] = attempt_idx
                 f.write(json.dumps(record, default=str) + "\n")
+        if final_verdict:
+            f.write(json.dumps({"type": "VerificationReport", "text": final_verdict}, default=str) + "\n")
 
     md_path.write_text(
-        render_markdown(case_id, instructions, initial_prompt, attempts, feedback_between_attempts),
+        render_markdown(case_id, instructions, initial_prompt, attempts, feedback_between_attempts, final_verdict),
         encoding="utf-8",
     )
     return jsonl_path, md_path
