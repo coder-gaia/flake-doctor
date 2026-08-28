@@ -158,7 +158,7 @@ def _main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Run a fixer across all benchmark cases.")
-    parser.add_argument("fixer", choices=["b1", "b2"], help="which fixer to evaluate")
+    parser.add_argument("fixer", choices=["b1", "b2", "final"], help="which fixer to evaluate")
     parser.add_argument("--reruns", type=int, default=30)
     parser.add_argument("--no-persist", action="store_true", help="don't keep candidate artifacts")
     args = parser.parse_args()
@@ -169,6 +169,9 @@ def _main() -> None:
     elif args.fixer == "b2":
         from flakedoctor.agent import run_agent_on_case as fixer_fn
         label = "b2_agent_no_verification"
+    elif args.fixer == "final":
+        from flakedoctor.agent import run_verified_agent_on_case as fixer_fn
+        label = "final_verified_agent"
 
     results = run_fixer_eval(fixer_fn, reruns=args.reruns, persist_label=None if args.no_persist else label)
     summary = summarize(results)
