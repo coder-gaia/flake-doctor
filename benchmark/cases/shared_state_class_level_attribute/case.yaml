@@ -1,0 +1,28 @@
+id: shared_state_class_level_attribute
+category: shared_state
+description: >
+  Cart.items is declared at class level, so every Cart() instance shares
+  one list. test_new_cart_starts_empty assumes a fresh instance has no
+  items -- true unless test_cart_totals_a_single_item happened to run
+  first and already added to the shared list.
+target_test: tests/test_cart.py::test_new_cart_starts_empty
+culprit_test: tests/test_cart.py::test_cart_totals_a_single_item
+run:
+  reruns: 50
+  note: >
+    Not symmetric like the mutable-default-arg case -- only the
+    totals-then-empty order fails, so the plain process exit code is a
+    valid signal here (unlike order_dependence_singleton_reset).
+mutant:
+  files: [src/cart.py]
+  must_fail_test: tests/test_cart.py::test_cart_totals_a_single_item
+  what_it_breaks: >
+    Cart.total() ignores `qty` entirely. A properly fixed test (instance
+    attribute set in __init__, isolated carts) must still catch this
+    pricing bug.
+notes: >
+  Same underlying gotcha as shared_state_mutable_default_arg (module/class
+  level mutable defaults) applied to a class attribute instead of a
+  function parameter -- checks whether the diagnosis generalizes across
+  Python's two classic "accidentally shared mutable state" footguns.
+expected_flake_rate: 0.525 # empirical: 21/40 fresh-process runs (validated 2026-08-28)

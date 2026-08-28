@@ -1,0 +1,28 @@
+id: shared_state_mutable_default_arg
+category: shared_state
+description: >
+  add_tag(item, tags=[]) uses a mutable default argument -- created once
+  at function-definition time and shared by every call that omits `tags`.
+  Both tests below rely on the default and each assumes it starts empty;
+  exactly one of them fails, whichever call happened second.
+target_test: tests/test_tags.py::test_add_tag_starts_from_an_empty_list
+culprit_test: null
+run:
+  reruns: 50
+  note: >
+    Symmetric leak like order_dependence_singleton_reset -- check the
+    target test's own per-node result, not the process exit code.
+mutant:
+  files: [src/tags.py]
+  must_fail_test: tests/test_tags.py::test_add_tag_starts_from_an_empty_list
+  what_it_breaks: >
+    Removes the duplicate check, so calling add_tag with the same item
+    twice adds it twice. The right fix (tags=None, then `tags if tags is
+    not None else []` inside the function) must produce a test that still
+    catches this.
+notes: >
+  Distinct from the order_dependence cases: there's no fixture and no
+  shared test file setup to blame -- the leak lives entirely inside the
+  production function's signature. Tests whether the agent looks past the
+  test file into the function definition itself.
+expected_flake_rate: 0.525 # empirical: 21/40 fresh-process runs, target test's own node result (validated 2026-08-28)
