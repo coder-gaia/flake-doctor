@@ -1,0 +1,280 @@
+{
+  "summary": {
+    "total_cases": 14,
+    "verified_repair_rate": 0.9285714285714286,
+    "passed": 13,
+    "failed_or_errored": 1,
+    "sandbox_violations": 0,
+    "gate_failure_counts": {
+      "sensitivity": 1
+    }
+  },
+  "cases": [
+    {
+      "case": "concurrency_counter_race",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \n..\\..\\tmpcx1bntir\\candidate\\tests\\test_counter.py:25: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_counter.py::test_three_threads_each_increment_once - assert...\nFAILED tests/test_counter.py::test_many_threads_each_increment_once - assert ...\n2 failed in 0.23s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "2/2 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 126.21293420000075,
+      "sandbox_violations": []
+    },
+    {
+      "case": "concurrency_duplicate_processing",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E         Use -v to get more diff\n\n..\\..\\tmp_5x8p2md\\candidate\\tests\\test_dedup_processor.py:26: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_dedup_processor.py::test_duplicate_deliveries_are_processed_once\n1 failed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "1/1 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 295.69462289999865,
+      "sandbox_violations": []
+    },
+    {
+      "case": "environment_decimal_context_leak",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \n..\\..\\tmp0ngev3jc\\candidate\\tests\\test_pricing.py:25: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_pricing.py::test_rounds_to_two_places_for_display - Asserti...\nFAILED tests/test_pricing.py::test_full_precision_division - AssertionError: ...\n2 failed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "2/2 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 96.59320769999977,
+      "sandbox_violations": []
+    },
+    {
+      "case": "environment_leaked_env_var",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E        +  where 80.0 = discount_for(100.0)\n\n..\\..\\tmpddr1w1_j\\candidate\\tests\\test_discounts.py:13: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_discounts.py::test_enables_beta_discount - assert 80.0 == 85.0\n1 failed, 1 passed in 0.18s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "2/2 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 85.49363480000102,
+      "sandbox_violations": []
+    },
+    {
+      "case": "network_simulated_timeout",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \n..\\..\\tmp1j9n0k9_\\candidate\\tests\\test_fetch.py:71: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_fetch.py::test_fetch_succeeds_within_three_retries - src.ht...\nFAILED tests/test_fetch.py::test_fetch_gives_up_after_exhausting_retries - as...\n2 failed, 2 passed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 163.8323949000005,
+      "sandbox_violations": []
+    },
+    {
+      "case": "order_dependence_cross_file",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E        +  where 99.8 = price_for('user-42', 100.0)\n\n..\\..\\tmpp6jcngo3\\candidate\\tests\\test_billing.py:11: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_billing.py::test_vip_user_gets_discount - AssertionError: a...\n1 failed, 2 passed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 95.33800450000126,
+      "sandbox_violations": []
+    },
+    {
+      "case": "order_dependence_fixture_leak",
+      "verdict": "FAIL",
+      "gates": {
+        "stability": true,
+        "sensitivity": false,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant NOT caught: the whole suite still passes with a known bug injected into production code",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "2/2 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 80.6097007999997,
+      "sandbox_violations": []
+    },
+    {
+      "case": "order_dependence_singleton_reset",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: =========================== short test summary info ===========================\nERROR tests/test_config.py::test_config_honors_beta_mode_override - Attribute...\nERROR tests/test_config.py::test_config_is_cached_within_a_single_run - Attri...\nERROR tests/test_config.py::test_reset_config_forces_environment_reread - Att...\nERROR tests/test_config.py::test_config_defaults_to_production - AttributeErr...\n4 errors in 0.18s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 152.35932490000414,
+      "sandbox_violations": []
+    },
+    {
+      "case": "random_set_iteration_order",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: ..\\..\\tmpk9bgudi_\\candidate\\tests\\test_dedupe.py:31: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_dedupe.py::test_dedupe_preserves_a_specific_order - Asserti...\nFAILED tests/test_dedupe.py::test_dedupe_preserves_order_for_many_tags - Asse...\nFAILED tests/test_dedupe.py::test_dedupe_no_duplicates_is_identity - Assertio...\n3 failed, 1 passed in 0.18s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 95.25164009999571,
+      "sandbox_violations": []
+    },
+    {
+      "case": "random_unseeded_sampling",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: =========================== short test summary info ===========================\nFAILED tests/test_weighted_sample.py::test_sample_is_without_replacement - Ty...\nFAILED tests/test_weighted_sample.py::test_heavy_weight_dominates_across_many_draws\nFAILED tests/test_weighted_sample.py::test_default_rng_falls_back_to_global_module\nFAILED tests/test_weighted_sample.py::test_heavily_weighted_item_is_picked_first\n4 failed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 184.92336459999933,
+      "sandbox_violations": []
+    },
+    {
+      "case": "shared_state_class_level_attribute",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \n..\\..\\tmpwdbqed22\\candidate\\tests\\test_cart.py:22: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_cart.py::test_cart_totals_a_single_item - assert 9.99 == 19.98\nFAILED tests/test_cart.py::test_carts_do_not_share_items - assert 19.98 == 0.0\n2 failed, 1 passed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 89.74144579999847,
+      "sandbox_violations": []
+    },
+    {
+      "case": "shared_state_mutable_default_arg",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \n..\\..\\tmp0per34sg\\candidate\\tests\\test_tags.py:33: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_tags.py::test_add_tag_to_a_fresh_item - AssertionError: ass...\nFAILED tests/test_tags.py::test_add_tag_does_not_duplicate_existing_tag - Ass...\n2 failed, 2 passed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 93.93511430000217,
+      "sandbox_violations": []
+    },
+    {
+      "case": "timing_daily_window_boundary",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E         Use -v to get more diff\n\n..\\..\\tmprcbmr63o\\candidate\\tests\\test_daily_limiter.py:20: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_daily_limiter.py::test_fourth_call_same_day_is_rejected - a...\n1 failed, 1 passed in 0.20s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "2/2 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 140.9487833000021,
+      "sandbox_violations": []
+    },
+    {
+      "case": "timing_ttl_second_boundary",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E         + alice\n\n..\\..\\tmpuc3gvkuu\\candidate\\tests\\test_ttl_cache.py:56: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_ttl_cache.py::test_get_after_ttl_has_elapsed_returns_default\n1 failed, 2 passed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 304.09208729999955,
+      "sandbox_violations": []
+    }
+  ]
+}
