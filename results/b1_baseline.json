@@ -1,0 +1,267 @@
+{
+  "summary": {
+    "total_cases": 14,
+    "verified_repair_rate": 0.6428571428571429,
+    "passed": 9,
+    "failed_or_errored": 5,
+    "gate_failure_counts": {
+      "stability": 1,
+      "sensitivity": 4,
+      "blast_radius": 1
+    }
+  },
+  "cases": [
+    {
+      "case": "concurrency_counter_race",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: C:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\concurrency_counter_race\\tests\\test_counter.py:41: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_counter.py::test_many_threads_with_external_lock_do_not_lose_updates\nFAILED tests/test_counter.py::test_three_threads_each_increment_once - assert...\nFAILED tests/test_counter.py::test_single_thread_increments_are_exact - asser...\n3 failed in 1.92s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 111.80510359999971
+    },
+    {
+      "case": "concurrency_duplicate_processing",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: C:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\concurrency_duplicate_processing\\tests\\test_dedup_processor.py:57: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_dedup_processor.py::test_distinct_items_are_each_processed_once\nFAILED tests/test_dedup_processor.py::test_duplicate_deliveries_are_processed_once\nFAILED tests/test_dedup_processor.py::test_sequential_duplicate_deliveries_are_processed_once\n3 failed in 0.38s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 61.5383608000011
+    },
+    {
+      "case": "environment_decimal_context_leak",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: C:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\environment_decimal_context_leak\\tests\\test_pricing.py:20: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_pricing.py::test_rounds_to_two_places_for_display - Asserti...\nFAILED tests/test_pricing.py::test_display_rounding_does_not_leak_precision\nFAILED tests/test_pricing.py::test_full_precision_division - AssertionError: ...\n3 failed in 0.20s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 43.60243040000205
+    },
+    {
+      "case": "environment_leaked_env_var",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E        +  where 80.0 = discount_for(100.0)\n\nC:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\environment_leaked_env_var\\tests\\test_discounts.py:11: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_discounts.py::test_enables_beta_discount - assert 80.0 == 85.0\n1 failed, 1 passed in 0.21s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "2/2 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 41.685024300000805
+    },
+    {
+      "case": "network_simulated_timeout",
+      "verdict": "FAIL",
+      "gates": {
+        "stability": false,
+        "sensitivity": false,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "1/30 fresh-process runs failed; sample: src.http_client.TimeoutError: simulated timeout for https://example.invalid/data",
+        "sensitivity": "mutant NOT caught: the whole suite still passes with a known bug injected into production code",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 61.74180249999699
+    },
+    {
+      "case": "order_dependence_cross_file",
+      "verdict": "FAIL",
+      "gates": {
+        "stability": true,
+        "sensitivity": false,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant NOT caught: the whole suite still passes with a known bug injected into production code",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 49.100804400000925
+    },
+    {
+      "case": "order_dependence_fixture_leak",
+      "verdict": "FAIL",
+      "gates": {
+        "stability": true,
+        "sensitivity": false,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant NOT caught: the whole suite still passes with a known bug injected into production code",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 41.99923350000245
+    },
+    {
+      "case": "order_dependence_singleton_reset",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E         + staging\n\nC:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\order_dependence_singleton_reset\\tests\\test_config.py:31: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_config.py::test_config_defaults_to_production - AssertionEr...\n1 failed, 2 passed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 63.619148300000234
+    },
+    {
+      "case": "random_set_iteration_order",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \nC:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\random_set_iteration_order\\tests\\test_dedupe.py:43: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_dedupe.py::test_dedupe_preserves_a_specific_order - Asserti...\nFAILED tests/test_dedupe.py::test_dedupe_keeps_every_unique_tag_when_no_duplicates\n2 failed, 2 passed in 0.19s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 52.76334159999897
+    },
+    {
+      "case": "random_unseeded_sampling",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \nC:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\random_unseeded_sampling\\tests\\test_weighted_sample.py:66: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_weighted_sample.py::test_heavily_weighted_item_is_picked_first\nFAILED tests/test_weighted_sample.py::test_zero_weight_items_are_never_picked\n2 failed, 2 passed in 0.22s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 75.10999609999999
+    },
+    {
+      "case": "shared_state_class_level_attribute",
+      "verdict": "FAIL",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": false
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: C:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\shared_state_class_level_attribute\\tests\\test_cart.py:40: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_cart.py::test_carts_do_not_share_items_within_a_test - asse...\nFAILED tests/test_cart.py::test_cart_totals_a_single_item - assert 9.99 == 19.98\nFAILED tests/test_cart.py::test_cart_totals_multiple_items - assert 13.99 == ...\n3 failed, 1 passed in 0.22s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 54.373384700000315
+    },
+    {
+      "case": "shared_state_mutable_default_arg",
+      "verdict": "FAIL",
+      "gates": {
+        "stability": true,
+        "sensitivity": false,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant NOT caught: the whole suite still passes with a known bug injected into production code",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 50.27770559999772
+    },
+    {
+      "case": "timing_daily_window_boundary",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: \nC:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\timing_daily_window_boundary\\tests\\test_daily_limiter.py:55: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_daily_limiter.py::test_fourth_call_same_day_is_rejected - a...\nFAILED tests/test_daily_limiter.py::test_quota_enforced_again_after_rollover\n2 failed, 1 passed in 0.17s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "3/3 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 45.239183599998796
+    },
+    {
+      "case": "timing_ttl_second_boundary",
+      "verdict": "PASS",
+      "gates": {
+        "stability": true,
+        "sensitivity": true,
+        "anti_cheat": true,
+        "blast_radius": true
+      },
+      "detail": {
+        "stability": "0/30 fresh-process runs failed",
+        "sensitivity": "mutant correctly caught by the suite: E        +    where get = <src.ttl_cache.TTLCache object at 0x0000021467B442F0>.get\n\nC:\\Users\\user\\Downloads\\micro1-hackathon\\results\\candidates\\b1_baseline\\timing_ttl_second_boundary\\tests\\test_ttl_cache.py:65: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_ttl_cache.py::test_get_after_ttl_expires_returns_none - Ass...\n1 failed, 3 passed in 0.17s",
+        "anti_cheat": "no forbidden patterns; assert count held or increased",
+        "blast_radius": "4/4 tests in the case passed"
+      },
+      "error": null,
+      "seconds": 88.7604207000004
+    }
+  ]
+}

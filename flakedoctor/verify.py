@@ -77,6 +77,19 @@ def _load_case_yaml(case_dir: Path) -> dict:
 
 def verify_stability(candidate_dir: Path, target_test: str, reruns: int = 50) -> GateResult:
     report = detect(candidate_dir, target_test, reruns=reruns)
+
+    if not any(r.found for r in report.runs):
+        # Every run failed to even find the node -- this is a renamed or
+        # deleted test, not flakiness. Surfacing it distinctly matters: it
+        # silently looked identical to "still 100% flaky" until a real run
+        # (a fixer had renamed its target test) got caught this way, see
+        # CHANGELOG.md.
+        return GateResult(
+            "stability", False,
+            f"target test {target_test!r} was not found in any of {report.reruns} runs "
+            "(renamed or removed? the fixer must keep the target function's exact name)",
+        )
+
     passed = report.flake_rate == 0.0
     detail = f"{report.fail_count}/{report.reruns} fresh-process runs failed"
     if not passed:
