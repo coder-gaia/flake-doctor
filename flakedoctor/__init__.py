@@ -1,1 +1,1 @@
-"""Flake Doctor — diagnose and verifiably repair flaky pytest tests."""
+"""Flake Doctor: diagnose and verifiably repair flaky pytest tests."""
