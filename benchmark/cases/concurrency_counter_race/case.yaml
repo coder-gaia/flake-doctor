@@ -1,0 +1,30 @@
+id: concurrency_counter_race
+category: concurrency
+description: >
+  Counter.increment() does a non-atomic read-modify-write. Three threads
+  each call it once; the test assumes the result is always exactly 3, but
+  two threads can read the same value before either writes back, silently
+  losing an increment.
+target_test: tests/test_counter.py::test_three_threads_each_increment_once
+culprit_test: null
+run:
+  reruns: 50
+mutant:
+  files: [src/counter.py]
+  must_fail_test: tests/test_counter.py::test_three_threads_each_increment_once
+  what_it_breaks: >
+    Increments by 2 instead of 1 -- a real logic bug, independent of the
+    race. The right fix adds a threading.Lock() around the
+    read-modify-write; once the race is gone, a deterministic test
+    expecting exactly 3 must still fail against this mutant (it would
+    reach 6).
+notes: >
+  The time.sleep(0) yield point is a deliberate benchmark design choice:
+  it widens the race window enough to reproduce reliably on any machine,
+  instead of depending on real hardware/scheduler luck the way a naive
+  race-condition test would. Documented here because it is the one
+  category-defining decision that trades a little realism for
+  reproducibility across machines -- the same reason every other category
+  in this benchmark is built on seeded/deterministic nondeterminism rather
+  than raw wall-clock jitter.
+expected_flake_rate: 0.275 # empirical: 11/40 fresh-process runs (validated 2026-08-28), after tuning the jitter window down from an initial ~95% (see git history)

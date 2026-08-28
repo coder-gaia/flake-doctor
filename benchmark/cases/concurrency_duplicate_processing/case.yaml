@@ -1,0 +1,38 @@
+id: concurrency_duplicate_processing
+category: concurrency
+description: >
+  DedupProcessor.process does a non-atomic check-then-act on a shared set:
+  check `item not in seen`, then add it and record it. Three threads
+  deliver the same item id concurrently (simulating at-least-once
+  delivery); the test assumes exactly one gets recorded, but two threads
+  can both pass the check before either updates `seen`.
+target_test: tests/test_dedup_processor.py::test_duplicate_deliveries_are_processed_once
+culprit_test: null
+run:
+  reruns: 50
+mutant:
+  files: [src/dedup_processor.py]
+  must_fail_test: tests/test_dedup_processor.py::test_duplicate_deliveries_are_processed_once
+  what_it_breaks: >
+    Records item.upper() instead of the original item -- a real
+    transformation bug, independent of the race. The right fix adds a
+    threading.Lock() around the check-then-act; once the race is gone, a
+    deterministic test expecting exactly ["order-42"] must still fail
+    against this mutant (it would get ["ORDER-42"]).
+notes: >
+  Same jitter technique as concurrency_counter_race (wide stagger before
+  the critical section, narrow race window inside it), reused because it
+  was already tuned and validated there -- see that case's notes for why
+  a naive single time.sleep(0) or a too-narrow window doesn't reliably
+  reproduce on this machine.
+
+  An earlier design for this slot tried to trigger Python's
+  "dictionary changed size during iteration" RuntimeError from a second
+  thread deleting keys while the main thread iterated. It never
+  reproduced on this machine even under an aggressive setswitchinterval
+  stress test -- CPython's dict iteration here appears to complete
+  without yielding the GIL mid-loop often enough to interleave with
+  another thread's deletes. Replaced with this check-then-act race
+  instead of shipping an untunable case; kept as a documented example of
+  a benchmark design that didn't survive empirical validation.
+expected_flake_rate: 0.10 # empirical: 4/40 fresh-process runs (validated 2026-08-28)
