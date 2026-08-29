@@ -137,6 +137,38 @@ since the model's exact tool-call sequence is not deterministic; the `.md`
 files are the easiest way to read one start to finish, the `.jsonl` files
 are the mechanical trace.
 
+### 6. Real-world validation case: a bug we did not design
+
+[`case-studies/typeguard_forward_ref_warning/`](case-studies/typeguard_forward_ref_warning/)
+is sourced from a real, documented issue,
+[agronholm/typeguard#221](https://github.com/agronholm/typeguard/issues/221),
+found via the [Illinois Dataset of Flaky Tests](https://github.com/TestingResearchIllinois/idoft).
+It sits outside `benchmark/cases/` on purpose, so it can never be confused
+with one of the 14 designed cases. Full provenance and the investigation
+that led to the final version are in `case-studies/typeguard_forward_ref_warning/case.yaml`.
+
+Prove the flake is real (no LLM call, a few seconds):
+
+```bash
+python -m flakedoctor.detect case-studies/typeguard_forward_ref_warning "tests/test_forward_ref_guessing.py::test_b_same_warning_again" --reruns 20
+```
+
+Expected: a fail count around 50-65%, ending in the same `DID NOT WARN`
+error text the real GitHub issue reports.
+
+Run the agent against it (1-2 min, notional cost like the single-case
+commands above):
+
+```bash
+python -m flakedoctor.agent case-studies/typeguard_forward_ref_warning "tests/test_forward_ref_guessing.py::test_b_same_warning_again" --verify --verbose
+```
+
+Canonical result: **PASS on the first attempt**, all four gates green. The
+saved trajectory (`trajectories/real_world_typeguard_forward_ref_warning.md`)
+shows the agent explicitly rejecting an outdated theory left in the test
+file's own docstring before proposing the real cause; the fixed files it
+produced are kept at `case-studies/typeguard_forward_ref_warning/agent_fix/`.
+
 ## Approximate runtime and cost
 
 Measured on the development machine (Windows, Python 3.14, Claude Pro
