@@ -2,7 +2,7 @@
 
 > An agent that diagnoses and repairs flaky pytest tests, and proves the repair is real before handing it to you.
 >
-> Built for the micro1 Agentic Workflows Hackathon (Aug 28–30, 2026). Everything in this repository was built during the hackathon window; nothing pre-existed it.
+> Built by Alexandre Gaia for the micro1 Agentic Workflows Hackathon (Aug 28–30, 2026). Everything in this repository was built during the hackathon window; nothing pre-existed it.
 
 ## Who has this problem
 
@@ -42,7 +42,7 @@ Yes: see [REPRODUCTION.md](REPRODUCTION.md) for exact commands, expected output,
 
 ## Status
 
-Core pipeline complete: benchmark, oracle, baseline, agent, verify-and-retry loop, and trajectory capture are all built, evaluated, and evidenced above. Remaining: the solution video and a final clean-environment reproduction pass.
+Complete: benchmark, oracle, baseline, agent, verify-and-retry loop, trajectory capture, the solution video, and a final clean-environment reproduction pass (a fresh clone, a fresh virtual environment, every command in REPRODUCTION.md rerun from scratch) are all built, evaluated, and evidenced above.
 
 ## Repository layout
 
@@ -67,4 +67,4 @@ trajectories/    representative agent trajectories (required deliverable)
 
 ## License
 
-TBD.
+MIT. See [LICENSE](LICENSE).
