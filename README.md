@@ -40,12 +40,6 @@ The final agent's one non-pass in its batch was a transient 120-second subproces
 
 Yes: see [REPRODUCTION.md](REPRODUCTION.md) for exact commands, expected output, versions, and approximate runtime and cost, written for a clean checkout with no other context.
 
-## Using it without the terminal
-
-The CLI (`python -m flakedoctor.agent ...`) is the primary interface, the same one every number above was measured with. For picking a case and watching a real run happen without typing paths, `python -m flakedoctor.web` starts a small local server at `http://127.0.0.1:8000`: pick a case, toggle the verify-and-retry loop on or off, click Run, and watch the same tool-call log and four-gate scorecard `--verbose` prints, live, in a browser.
-
-It calls the exact same functions the CLI does, nothing is precomputed or replayed. It is deliberately not a hosted product: it authenticates with whatever Claude Code session is logged in on the machine running it (a Pro/Max subscription or `ANTHROPIC_API_KEY`, see REPRODUCTION.md), same as the CLI, so it only ever runs under the credentials and rate limit of whoever starts it, on their own machine. See [`flakedoctor/web/__init__.py`](flakedoctor/web/__init__.py) for why that boundary is deliberate, not a shortcut.
-
 ## Status
 
 Core pipeline complete: benchmark, oracle, baseline, agent, verify-and-retry loop, and trajectory capture are all built, evaluated, and evidenced above. Remaining: the solution video and a final clean-environment reproduction pass.
@@ -59,8 +53,6 @@ flakedoctor/
   agent.py       the tool-using fixer, with and without the verify-and-retry loop
   eval.py        runs a fixer across every benchmark case and verifies each result
   trajectory.py  renders a captured run into JSONL + a human-readable Markdown walkthrough
-  web/           optional local web UI over the same functions the CLI calls
-                 (python -m flakedoctor.web), not a hosted product
 baselines/
   single_prompt.py  B1: one direct prompt, no tools, no execution
 benchmark/cases/ 14 synthetic flaky-test cases used for evaluation, each with a
