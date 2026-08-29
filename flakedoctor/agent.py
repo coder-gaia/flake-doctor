@@ -17,7 +17,7 @@ import asyncio
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from claude_agent_sdk import (
     AssistantMessage,
@@ -136,6 +136,20 @@ class VerifiedFixResult:
         return sum(r.cost_usd for r in self.runs)
 
 
+@dataclass
+class AttemptEvent:
+    """Synthetic event, not a raw SDK message: passed to on_message (see
+    _run_with_verification) at the two points the CLI's --verbose output
+    already marks with a printed line ("=== attempt N ===" and the
+    verification block after it) so a live consumer, e.g. flakedoctor.web,
+    can render the same two moments without polling or guessing from the
+    raw message stream.
+    """
+    kind: str  # "attempt_start" | "verification"
+    attempt: int
+    report: VerificationReport | None = None
+
+
 def _record_response(run: AgentRun, message: Any) -> None:
     run.messages.append(message)
     if isinstance(message, AssistantMessage):
@@ -159,7 +173,19 @@ def _build_options(candidate_dir: Path, max_turns: int) -> ClaudeAgentOptions:
     )
 
 
-async def _run_once(candidate_dir: Path, target_test: str, max_turns: int) -> AgentRun:
+async def _run_once(
+    candidate_dir: Path,
+    target_test: str,
+    max_turns: int,
+    on_message: Callable[[Any], None] | None = None,
+) -> AgentRun:
+    """on_message, if given, is called synchronously with every raw SDK
+    message as it arrives, in addition to it being recorded onto the
+    returned AgentRun. Existing callers (flakedoctor.eval, the CLI's B2
+    path) never pass it, so this is purely additive; flakedoctor.web is
+    the one consumer that does, to stream a live log instead of waiting
+    for the whole run to finish.
+    """
     prompt = INITIAL_PROMPT_TEMPLATE.format(target_test=target_test)
     options = _build_options(candidate_dir, max_turns)
     run = AgentRun(candidate_dir=candidate_dir)
@@ -167,6 +193,8 @@ async def _run_once(candidate_dir: Path, target_test: str, max_turns: int) -> Ag
         await client.query(prompt)
         async for message in client.receive_response():
             _record_response(run, message)
+            if on_message:
+                on_message(message)
     return run
 
 
@@ -177,27 +205,47 @@ async def _run_with_verification(
     max_turns: int,
     max_retries: int,
     verify_reruns: int,
+    on_message: Callable[[Any], None] | None = None,
 ) -> VerifiedFixResult:
     """Same agent, same tools, same prompt as _run_once -- the only
     difference from B2 is this loop: after each attempt, run the real
     four-gate verifier and, on failure, send the structured feedback back
     into the *same conversation* (so the model keeps whatever context it
     already built) for another attempt.
+
+    on_message: see _run_once. Additionally receives an AttemptEvent at
+    the two points the CLI's --verbose output prints a divider: before
+    each attempt's messages start, and after that attempt's verification
+    report comes back.
     """
     prompt = INITIAL_PROMPT_TEMPLATE.format(target_test=target_test)
     options = _build_options(candidate_dir, max_turns)
     runs: list[AgentRun] = []
     feedback_history: list[str] = []
+    loop = asyncio.get_running_loop()
 
     async with ClaudeSDKClient(options=options) as client:
         await client.query(prompt)
+        if on_message:
+            on_message(AttemptEvent(kind="attempt_start", attempt=1))
         run = AgentRun(candidate_dir=candidate_dir)
         async for message in client.receive_response():
             _record_response(run, message)
+            if on_message:
+                on_message(message)
         runs.append(run)
 
         for attempt in range(max_retries + 1):
-            report = verify_fix(original_case_dir, candidate_dir, target_test, reruns=verify_reruns)
+            # Run in a thread: verify_fix is synchronous and does up to
+            # verify_reruns fresh subprocess calls, which would otherwise
+            # block this coroutine's event loop for the whole gate check,
+            # starving any consumer (flakedoctor.web's SSE stream) that is
+            # trying to flush already-queued events in the meantime.
+            report = await loop.run_in_executor(
+                None, verify_fix, original_case_dir, candidate_dir, target_test, verify_reruns,
+            )
+            if on_message:
+                on_message(AttemptEvent(kind="verification", attempt=attempt + 1, report=report))
             if report.all_passed or attempt == max_retries:
                 return VerifiedFixResult(
                     candidate_dir, report, attempts=attempt + 1, runs=runs, feedback_history=feedback_history,
@@ -205,10 +253,14 @@ async def _run_with_verification(
 
             feedback_text = FEEDBACK_TEMPLATE.format(feedback=report.as_feedback())
             feedback_history.append(feedback_text)
+            if on_message:
+                on_message(AttemptEvent(kind="attempt_start", attempt=attempt + 2))
             await client.query(feedback_text)
             run = AgentRun(candidate_dir=candidate_dir)
             async for message in client.receive_response():
                 _record_response(run, message)
+                if on_message:
+                    on_message(message)
             runs.append(run)
 
     # Unreachable (the loop above always returns), but keeps type checkers happy.
@@ -277,7 +329,7 @@ def fix_case_with_verification(
     ))
 
 
-def _relative_to_candidate(raw_path: str, candidate_dir: Path) -> str:
+def relative_to_candidate(raw_path: str, candidate_dir: Path) -> str:
     """Render a tool's file_path the way someone watching the demo expects
     to read it: relative to the project, not an absolute OS temp path. A
     path that resolves OUTSIDE candidate_dir is left absolute and flagged
@@ -304,19 +356,19 @@ def _relative_to_candidate(raw_path: str, candidate_dir: Path) -> str:
     return f"!! OUTSIDE SANDBOX: {raw_path}"
 
 
-def _describe_tool_use(block: ToolUseBlock, candidate_dir: Path) -> str:
+def describe_tool_use(block: ToolUseBlock, candidate_dir: Path) -> str:
     name, inp = block.name, block.input or {}
     if name == "Bash":
         return f"$ {inp.get('description') or inp.get('command', '')}"
     if name in ("Read", "Write", "Edit"):
         verb = {"Read": "reading ", "Write": "writing ", "Edit": "editing "}[name]
-        return f"{verb} {_relative_to_candidate(inp.get('file_path', ''), candidate_dir)}"
+        return f"{verb} {relative_to_candidate(inp.get('file_path', ''), candidate_dir)}"
     if name in ("Grep", "Glob"):
         return f"searching for {inp.get('pattern', '')!r}"
     return f"{name.lower()}  {inp}"
 
 
-def _describe_tool_result(tool_name: str | None, content: Any) -> str | None:
+def describe_tool_result(tool_name: str | None, content: Any) -> str | None:
     """Only Bash output is worth echoing live: a file's full contents after
     Read/Write/Edit is redundant with the action line above it and, for a
     fix that gets rewritten mid-session, was literally being printed
@@ -357,13 +409,13 @@ def _print_trajectory(messages: list[Any], candidate_dir: Path) -> None:
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
                     tool_names_by_id[block.id] = block.name
-                    print(_describe_tool_use(block, candidate_dir))
+                    print(describe_tool_use(block, candidate_dir))
                 elif isinstance(block, TextBlock) and block.text:
                     print(f"\n{'-' * 60}\n{block.text.strip()}\n{'-' * 60}\n")
         elif isinstance(message, UserMessage):
             for block in message.content:
                 if isinstance(block, ToolResultBlock):
-                    line = _describe_tool_result(tool_names_by_id.get(block.tool_use_id), block.content)
+                    line = describe_tool_result(tool_names_by_id.get(block.tool_use_id), block.content)
                     if line:
                         print(line)
 

@@ -169,6 +169,31 @@ shows the agent explicitly rejecting an outdated theory left in the test
 file's own docstring before proposing the real cause; the fixed files it
 produced are kept at `case-studies/typeguard_forward_ref_warning/agent_fix/`.
 
+### 7. Optional: the local web UI
+
+Everything above is the CLI, the interface every number in this project was
+measured with. `flakedoctor/web` wraps the exact same functions in a small
+local server with a case picker and a live view, for anyone who would
+rather click Run and watch than type paths. It is not a separate
+implementation: it imports and calls `flakedoctor.agent`'s own coroutines
+directly, so a run started from the browser exercises the identical code
+path as `python -m flakedoctor.agent --verify --verbose`.
+
+```bash
+python -m flakedoctor.web
+```
+
+Then open `http://127.0.0.1:8000`. Pick a case from the dropdown (every
+case under `benchmark/cases/` and `case-studies/`, the same ones the
+commands above use), leave the verify-and-retry toggle on, and click Run.
+Expected: the same tool-call log `--verbose` prints, live, followed by the
+four-gate scorecard and a PASS/FAIL banner once the run finishes.
+
+This is a local, single-user tool, not a hosted product: it authenticates
+with whatever is logged in on the machine running it (Path A or B above),
+so it only ever runs under that machine's own credentials and rate limit.
+See `flakedoctor/web/__init__.py` for why that is a deliberate boundary.
+
 ## Approximate runtime and cost
 
 Measured on the development machine (Windows, Python 3.14, Claude Pro
