@@ -14,6 +14,7 @@ built around a persistent client instead of one-shot query() calls.
 from __future__ import annotations
 
 import asyncio
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -276,24 +277,109 @@ def fix_case_with_verification(
     ))
 
 
-def _print_trajectory(messages: list[Any]) -> None:
+def _relative_to_candidate(raw_path: str, candidate_dir: Path) -> str:
+    """Render a tool's file_path the way someone watching the demo expects
+    to read it: relative to the project, not an absolute OS temp path. A
+    path that resolves OUTSIDE candidate_dir is left absolute and flagged
+    instead of hidden -- that would be a real sandbox escape (see
+    CHANGELOG.md's "Main failure mode"), exactly the kind of thing this
+    output should surface, not the kind to clean away.
+
+    On Windows, the model's own Bash calls see this same directory under
+    Git Bash's `/tmp/...` mount, not the native `C:\\...\\Temp\\...` path,
+    and it sometimes reuses that spelling in a Read/Write/Edit call too.
+    That is a path-notation difference, not an escape, so it is tried as a
+    second candidate before anything gets flagged.
+    """
+    candidates = [raw_path]
+    posix_path = raw_path.replace("\\", "/")
+    if posix_path.startswith("/tmp/"):
+        candidates.append(str(Path(tempfile.gettempdir()) / posix_path[len("/tmp/"):]))
+    for candidate in candidates:
+        try:
+            rel = Path(candidate).resolve().relative_to(candidate_dir.resolve())
+            return str(rel).replace("\\", "/")
+        except (ValueError, OSError):
+            continue
+    return f"!! OUTSIDE SANDBOX: {raw_path}"
+
+
+def _describe_tool_use(block: ToolUseBlock, candidate_dir: Path) -> str:
+    name, inp = block.name, block.input or {}
+    if name == "Bash":
+        return f"$ {inp.get('description') or inp.get('command', '')}"
+    if name in ("Read", "Write", "Edit"):
+        verb = {"Read": "reading ", "Write": "writing ", "Edit": "editing "}[name]
+        return f"{verb} {_relative_to_candidate(inp.get('file_path', ''), candidate_dir)}"
+    if name in ("Grep", "Glob"):
+        return f"searching for {inp.get('pattern', '')!r}"
+    return f"{name.lower()}  {inp}"
+
+
+def _describe_tool_result(tool_name: str | None, content: Any) -> str | None:
+    """Only Bash output is worth echoing live: a file's full contents after
+    Read/Write/Edit is redundant with the action line above it and, for a
+    fix that gets rewritten mid-session, was literally being printed
+    twice. A rerun loop's output is collapsed to its shape (one line, xN)
+    instead of every repeated line, so ten identical reruns read as ten
+    identical reruns rather than a wall of text.
+
+    Deliberately ignores the SDK's is_error flag: for Bash it just mirrors
+    a non-zero exit code, and a non-zero exit is the expected, correct
+    result of the very command that reproduces the flake (or the negative
+    check that mutation testing runs), not a malfunction worth flagging.
+    """
+    if tool_name != "Bash":
+        return None
+    text = content if isinstance(content, str) else str(content)
+    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
+    if not lines:
+        return None
+    if len(lines) <= 3:
+        return "\n".join(f"    -> {line}" for line in lines)
+    if len(set(lines)) == 1:
+        return f"    -> {lines[0]}  (x{len(lines)})"
+    middle = f"    -> ... ({len(lines) - 3} more lines) ..."
+    head = "\n".join(f"    -> {line}" for line in lines[:2])
+    return f"{head}\n{middle}\n    -> {lines[-1]}"
+
+
+def _print_trajectory(messages: list[Any], candidate_dir: Path) -> None:
+    """Renders a trajectory for a human watching over someone's shoulder
+    (e.g. during a recorded demo), not a machine log: short present-tense
+    action lines instead of raw tool-call dicts. Full fidelity (every raw
+    message, untruncated) is never lost, it's what flakedoctor.trajectory
+    saves to .jsonl/.md for anyone who needs to audit the exact calls.
+    """
+    tool_names_by_id: dict[str, str] = {}
     for message in messages:
         if isinstance(message, AssistantMessage):
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
-                    print(f"TOOL_USE: {block.name} {block.input}")
+                    tool_names_by_id[block.id] = block.name
+                    print(_describe_tool_use(block, candidate_dir))
                 elif isinstance(block, TextBlock) and block.text:
-                    print(f"TEXT: {block.text}")
+                    print(f"\n{'-' * 60}\n{block.text.strip()}\n{'-' * 60}\n")
         elif isinstance(message, UserMessage):
             for block in message.content:
                 if isinstance(block, ToolResultBlock):
-                    content = block.content if isinstance(block.content, str) else str(block.content)
-                    print(f"TOOL_RESULT: {content[:300]}")
+                    line = _describe_tool_result(tool_names_by_id.get(block.tool_use_id), block.content)
+                    if line:
+                        print(line)
 
 
 def _main() -> None:
     import argparse
-    import tempfile
+    import sys
+
+    # Best-effort: the agent's own text (model output we don't control) can
+    # contain characters the default Windows console codepage can't encode
+    # (e.g. an em dash). Without this, such runs either crash mid-demo or
+    # silently render as mojibake; UTF-8 with a safe fallback avoids both.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError, OSError):
+        pass
 
     parser = argparse.ArgumentParser(description="Run the tool-using agent on one case.")
     parser.add_argument("case_dir", type=Path)
@@ -317,7 +403,7 @@ def _main() -> None:
             if args.verbose:
                 for i, run in enumerate(result.runs):
                     print(f"=== attempt {i + 1} ===")
-                    _print_trajectory(run.messages)
+                    _print_trajectory(run.messages, candidate)
             print(f"\n--- verification after {result.attempts} attempt(s) ---")
             print(result.verification.as_feedback())
             print("VERDICT:", "PASS" if result.verification.all_passed else "FAIL")
@@ -325,7 +411,7 @@ def _main() -> None:
         else:
             run = asyncio.run(_run_once(candidate, args.target_test, args.max_turns))
             if args.verbose:
-                _print_trajectory(run.messages)
+                _print_trajectory(run.messages, candidate)
             print(f"\n--- final text ---\n{run.final_text}")
             print(f"\n--- turns={run.num_turns} cost_usd={run.cost_usd:.4f} ---")
 
